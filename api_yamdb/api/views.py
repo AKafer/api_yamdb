@@ -30,7 +30,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST']) 
 def code_generate(request):
-    yag = yagmail.SMTP( user="akafer82@yandex.ru", password="sskssk82", host='smtp.yandex.ru')
+    yag = yagmail.SMTP( user="akafer82@yandex.ru", password="password", host='smtp.yandex.ru')
     tema = 'Проверочный код'
     contents = ['Здесь будет код']
     username = request.data.get('username')
