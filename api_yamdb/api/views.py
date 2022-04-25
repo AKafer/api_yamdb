@@ -28,7 +28,7 @@ class CODGenerator(APIView):
         N = 20
         allowedChars = string.ascii_letters + string.digits + string.punctuation
         confirmation_code = ''.join(random.choice(allowedChars) for _ in range(N))
-        yag = yagmail.SMTP(user="akafer82@yandex.ru", password="sskssk82", host='smtp.yandex.ru')
+        yag = yagmail.SMTP(user="akafer82@yandex.ru", password="password", host='smtp.yandex.ru')
         tema = 'Проверочный код'
         username = request.data.get('username')
         email = request.data.get('email')
