@@ -43,7 +43,7 @@ class CODGenerator(APIView):
             if serializer.is_valid():    
                 User.objects.create(username=username, email=email, confirmation_code=confirmation_code)
                 return Response(request.data, status=status.HTTP_200_OK) 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
