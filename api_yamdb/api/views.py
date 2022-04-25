@@ -37,6 +37,10 @@ def code_generate(request):
     email = request.data.get('email')
     if User.objects.filter(username=username, email=email).exists():
         yag.send(['akafer@mail.ru'], tema, contents)
-        User.objects.filter(username=username, email=email).confirmation_code = 'jjjj'
+        user = User.objects.get(username=username, email=email)
+        print(user.confirmation_code)
+        user.confirmation_code = 'jjjj'
+        user.save()
+        print(user.confirmation_code)
         return Response({'data': request.data})
     return Response({'message': 'Данные некорректны', 'data': request.data})
