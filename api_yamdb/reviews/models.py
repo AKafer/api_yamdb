@@ -15,5 +15,5 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=150, null=True, blank=True) # string <= 150 characters
     bio	= models.TextField(null=True, blank=True) # string
     role = models.CharField(max_length=150, choices = CHOICES, default='user')
-    password = models.CharField(max_length=10, null=True, blank=True)
     confirmation_code = models.CharField(max_length=10, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
