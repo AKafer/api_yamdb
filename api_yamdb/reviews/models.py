@@ -20,12 +20,70 @@ class User(AbstractUser):
 
 
 class Category(models.Model):
-    pass
+    """Titles category class"""
+    name = models.CharField(
+        'Название категории',
+        max_length=200
+    )
+    slug = models.SlugField(
+        'Краткое наименование категории',
+        unique=True
+    )
 
-
-class Title(models.Model):
-    pass
+    def __str__(self):
+        return self.slug
 
 
 class Genre(models.Model):
-    pass
+    """Titles genre class"""
+    name = models.CharField(
+        'Жанр',
+        max_length=200
+    )
+    slug = models.SlugField(
+        'Краткое наименование жанра',
+        unique=True
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class Title(models.Model):
+    """Title class"""
+    name = models.CharField(
+        'Название произведения',
+        blank=False,
+        max_length=200
+    )
+    description = models.TextField(
+        'Описание',
+        blank=True,
+        max_length=200
+    )
+    year = models.DateTimeField(  # как проверить год? (не может быть в будущем, не м.б. отриц)
+        'Год издания',
+        null=True,
+        blank=True
+    )
+    genre = models.ManyToManyField(
+        Genre,
+        verbose_name='Жанр(ы)',
+        # through='Genre' # как связать?
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        verbose_name='Категория',
+        related_name='categories',
+        blank=True,
+        null=True
+    )
+    # rating = models.ForeignKey(
+    #   Rating,
+    #   null=True,
+    #   blank=True
+    # )
+
+    def __str__(self):
+        return f'{self.name}: общая информация'
