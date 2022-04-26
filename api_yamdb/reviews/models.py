@@ -17,3 +17,15 @@ class User(AbstractUser):
     role = models.CharField(max_length=150, choices = CHOICES, default='user')
     password = models.CharField(max_length=10, null=True, blank=True)
     confirmation_code = models.CharField(max_length=10, null=True, blank=True)
+
+
+class Category(models.Model):
+    pass
+
+
+class Title(models.Model):
+    pass
+
+
+class Genre(models.Model):
+    pass
