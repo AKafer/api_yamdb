@@ -16,4 +16,3 @@ class User(AbstractUser):
     bio	= models.TextField(null=True, blank=True) # string
     role = models.CharField(max_length=150, choices = CHOICES, default='user')
     confirmation_code = models.CharField(max_length=10, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
