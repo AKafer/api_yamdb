@@ -31,6 +31,9 @@ class Category(models.Model):
         unique=True
     )
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return self.slug
 
@@ -45,6 +48,9 @@ class Genre(models.Model):
         'Краткое наименование жанра',
         unique=True
     )
+
+    class Meta:
+        ordering = ['-id']
 
     def __str__(self):
         return self.name
@@ -63,7 +69,8 @@ class Title(models.Model):
     )
     year = models.DateTimeField(  # как проверить год? (не может быть в будущем, не м.б. отриц)
         'Год издания',
-        blank=False
+        blank=True,
+        null=True
     )
     genre = models.ManyToManyField(
         Genre,
@@ -86,3 +93,46 @@ class Title(models.Model):
 
     def __str__(self):
         return f'{self.name}: общая информация'
+
+# class Review(models.Model):
+#     """
+#     Отзыв на определенное произведение.
+#     Выставляемая оценка от 1 до 10.
+#     Рейтинг - ср.арифм. оценок.
+#     Отзыв может быть только один от одного автора.
+#     При удалении пользователя должны удалятся все отзывы этого пользователя.
+#     При удалении произведения должны удаляться все отзывы к нему.
+#     """
+#     composition = models.ForeignKey(
+#         Title, on_delete=models.CASCADE, related_name='reviews')
+#     author = models.ForeignKey(
+#         User, on_delete=models.CASCADE, related_name='reviews')
+#     text = models.TextField()
+#     score = models.IntegerField(
+#         default=1,
+#         validators=[
+#             MinValueValidator(1),
+#             MaxValueValidator(10)
+#         ]
+#     )
+#     rating = models.IntegerField(
+#         default=1,
+#         validators=[
+#             MinValueValidator(1),
+#             MaxValueValidator(10)
+#         ]
+#     )
+#     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+#
+#
+# class Comment(models.Model):
+#     """
+#     Комментарий к отзыву.
+#     При удалении пользователя должны удалятся все комменты этого пользователя.
+#     При удалении отзыва должны удаляться все комментарии к нему.
+#     """
+#     author = models.ForeignKey(
+#         User, on_delete=models.CASCADE, related_name='comments')
+#     review = models.ForeignKey(
+#         Review, on_delete=models.CASCADE, related_name='comments')
+#     text = models.TextField()

@@ -5,13 +5,13 @@ from .models import Genre, Category, Title
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        exclude = ('id',)
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        exclude = ('id',)
         model = Genre
 
 

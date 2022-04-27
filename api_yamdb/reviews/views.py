@@ -1,4 +1,4 @@
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import viewsets, filters, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -11,7 +11,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     # permission_classes = (OwnerOrReadOnly,)
     filter_backends = (filters.SearchFilter, )  #DjangoFilterBackend
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     search_fields = ('name',)
 
 
@@ -20,7 +20,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     serializer_class = GenreSerializer
     # permission_classes = (OwnerOrReadOnly,)
     filter_backends = (filters.SearchFilter, )
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     search_fields = ('name',)
 
 
@@ -29,5 +29,5 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
     permission_classes = (permissions.AllowAny,)
     filter_backends = (DjangoFilterBackend,)
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     filterset_fields = ('category', 'genre', 'name', 'year')
