@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 import random
 import string
 import re
@@ -18,6 +19,7 @@ from .serializers import (
     UserSerializer,
     UserForUserSerializer
 )
+from .permissions import IsAdmin, IsUser
 
 TEMA = 'Подтверждающий код для API YAMDB'
 N_code_len = 20
@@ -30,7 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = ('username')
-    permission_classes = ([IsAdminUser, ])
+    permission_classes = ([IsAdmin, ])
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
@@ -39,7 +41,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return get_object_or_404(
             self.queryset, username=self.kwargs["username"])
 
-    @action(detail=False, methods=['get', 'patch'], url_path='me')
+    @action(detail=False, methods=['get', 'patch'], url_path='me', permission_classes=([IsUser, ]))
     def user_rool_users_detail(self, request, username=None):
         user = get_object_or_404(User, username=self.request.user)
         print(user.first_name)
@@ -52,49 +54,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserForUserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def perform_create(self, serializer):
-        print(self.request.user)
-        if 'role' in self.request.data:
-            if self.request.data['role'] == 'moderator':
-                serializer.save(is_staff=True, is_superuser=False)
-            elif self.request.data['role'] == 'admin':
-                serializer.save(is_staff=True, is_superuser=True)
-            else:
-                serializer.save(is_staff=False, is_superuser=False)
-        else:
-            serializer.save()
-
-    def perform_update(self, serializer):
-        print(self.request.user)
-        if 'role' in self.request.data:
-            if self.request.data['role'] == 'moderator':
-                serializer.save(is_staff=True, is_superuser=False)
-            elif self.request.data['role'] == 'admin':
-                serializer.save(is_staff=True, is_superuser=True)
-            else:
-                serializer.save(is_staff=False, is_superuser=False)
-        else:
-            serializer.save()
-    
-    """def get_permissions(self):
-        user = User.objects.get(username=self.request.user)
-        print(self.request.path)
-        if '/api/v1/users/me/' == self.request.path:
-            self.permission_classes = [IsAuthenticated, ]
-            return super().get_permissions()
-        if '/api/v1/users/' == self.request.path:
-            self.permission_classes = [IsAdminUser, ]
-            return super().get_permissions()
-        match = re.search(r'/api/v1/users/\w+/', r'/api/v1/users/admin/') 
-        print(match[0] if match else 'Not found') 
-        if match:
-            self.permission_classes = [IsAdminUser, ]
-            return super().get_permissions()
-        print(super().get_permissions())
-        self.permission_classes = [IsAuthenticated, ]    
-        return super().get_permissions()"""
-    
-
+  
 class CodGenerator(APIView):
     def post(self, request):
         confirmation_code = get_code()
@@ -129,15 +89,32 @@ class CodGenerator(APIView):
 
 class TokenGenerator(APIView):
     def post(self, request):
-        username = request.data['username']
-        confirmation_code = request.data['confirmation_code']
+        if 'username' not in request.data or 'confirmation_code' not in request.data:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        username=request.data['username']
+        confirmation_code=request.data['confirmation_code']
+        
+        list_username = []
+        for x in User.objects.all().values('username'):
+            list_username.append(x['username'])
+        if username not in list_username:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        list_username = []
+        for x in User.objects.all().values('confirmation_code'):
+            list_username.append(x['confirmation_code'])
+        if confirmation_code not in list_username:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
         user = get_object_or_404(
             User,
             username=username,
             confirmation_code=confirmation_code
         )
-        print(user)
-        refresh = RefreshToken.for_user(user)
+        
+        refresh = RefreshToken.for_user(user)   
         return Response({
-            'token': str(refresh.access_token),
-        })
+                'token': str(refresh.access_token),
+            })
+
+        

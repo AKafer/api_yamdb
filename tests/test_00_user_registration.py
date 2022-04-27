@@ -155,7 +155,6 @@ class Test00UserRegistration:
             f'Проверьте, что при {request_type} запросе `{self.url_admin_create_user}` с валидными данными '
             f'от имени администратора, в БД создается пользователь и возвращается статус {code}'
         )
-
         # Test confirmation code not sent to user after admin registers him
         assert len(outbox_after) == outbox_before_count, (
             f'Проверьте, что при {request_type} запросе `{self.url_admin_create_user}` с валидными данными '
@@ -166,19 +165,19 @@ class Test00UserRegistration:
 
     @pytest.mark.django_db(transaction=True)
     def test_00_obtain_jwt_token_invalid_data(self, client):
-
+        print('0000')
         request_type = 'POST'
         response = client.post(self.url_token)
         assert response.status_code != 404, (
             f'Страница `{self.url_token}` не найдена, проверьте этот адрес в *urls.py*'
         )
-
+        print('1')
         code = 400
         assert response.status_code == code, (
             f'Проверьте, что при POST запросе `{self.url_token}` без параметров, '
             f'возвращается статус {code}'
         )
-
+        print('2')
         invalid_data = {
             'confirmation_code': 12345
         }
@@ -187,7 +186,7 @@ class Test00UserRegistration:
             f'Проверьте, что при POST запросе `{self.url_token}` без username, '
             f'возвращается статус {code}'
         )
-
+        print('3')
         invalid_data = {
             'username': 'unexisting_user',
             'confirmation_code': 12345
@@ -198,7 +197,7 @@ class Test00UserRegistration:
             f'Проверьте, что при POST запросе `{self.url_token}` с несуществующим username, '
             f'возвращается статус {code}'
         )
-
+        print('4')
         valid_email = 'valid@yamdb.fake'
         valid_username = 'valid_username'
 
@@ -212,7 +211,7 @@ class Test00UserRegistration:
             f'Проверьте, что при {request_type} запросе `{self.url_signup}` с валидными данными '
             f'создается пользователь и возвращается статус {code}'
         )
-
+        print('5')
         invalid_data = {
             'username': valid_username,
             'confirmation_code': 12345
