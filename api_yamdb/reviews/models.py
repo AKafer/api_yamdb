@@ -23,10 +23,11 @@ class Category(models.Model):
     """Titles category class"""
     name = models.CharField(
         'Название категории',
-        max_length=200
+        max_length=256
     )
     slug = models.SlugField(
         'Краткое наименование категории',
+        max_length=50,
         unique=True
     )
 
@@ -53,18 +54,16 @@ class Title(models.Model):
     """Title class"""
     name = models.CharField(
         'Название произведения',
-        blank=False,
+        null=False,
         max_length=200
     )
     description = models.TextField(
         'Описание',
         blank=True,
-        max_length=200
     )
     year = models.DateTimeField(  # как проверить год? (не может быть в будущем, не м.б. отриц)
         'Год издания',
-        null=True,
-        blank=True
+        blank=False
     )
     genre = models.ManyToManyField(
         Genre,
@@ -75,7 +74,7 @@ class Title(models.Model):
         Category,
         on_delete=models.SET_NULL,
         verbose_name='Категория',
-        related_name='categories',
+        related_name='titles',
         blank=True,
         null=True
     )

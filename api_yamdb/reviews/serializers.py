@@ -1,16 +1,25 @@
 from rest_framework import serializers
 
-
-from .models import User, Genre, Category, Title
+from .models import Genre, Category, Title
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    pass
+    class Meta:
+        fields = '__all__'
+        model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
-    pass
+    class Meta:
+        fields = '__all__'
+        model = Genre
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    pass
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, read_only=True)
+    # rating =
+
+    class Meta:
+        fields = '__all__'
+        model = Title
