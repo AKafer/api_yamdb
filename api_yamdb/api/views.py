@@ -7,9 +7,11 @@ from rest_framework.decorators import api_view  # Импортировали д�
 from rest_framework.response import Response  # Импортировали класс Response
 
 # from .permissions import IsOwnerOrReadOnly
-from reviews.models import User
+from reviews.models import User, Title, Review
 from .serializers import (
     UserSerializer,
+    ReviewSerializer,
+    CommentSerializer,
 )
 
 
@@ -44,3 +46,33 @@ def code_generate(request):
         print(user.confirmation_code)
         return Response({'data': request.data})
     return Response({'message': 'Данные некорректны', 'data': request.data})
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    #permission_classes = [
+     #   permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        return title.reviews.all()
+
+    def perform_create(self, serializer):
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        score_avg = round(title.reviews.all().aggregate(Avg('score')))
+        serializer.save(
+            title_id=title.id,
+            author=self.request.user,
+            score=score_avg)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    #permission_classes = [
+       # permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        review = title.review.filter(pk=self.kwargs.get('review_id'))
+        return review.comments.all()
+
