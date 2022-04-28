@@ -25,6 +25,7 @@ TEMA = 'Подтверждающий код для API YAMDB'
 N_code_len = 20
 
 def get_code():
+    """Функция генерации кода"""
     allowedChars = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(allowedChars) for _ in range(N_code_len))
 
@@ -41,7 +42,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return get_object_or_404(
             self.queryset, username=self.kwargs["username"])
 
-    @action(detail=False, methods=['get', 'patch'], url_path='me', permission_classes=([IsUser, ]))
+    @action(detail=False, methods=['get', 'patch'], url_path='me', permission_classes=([IsAuthenticated, ]))
     def user_rool_users_detail(self, request, username=None):
         user = get_object_or_404(User, username=self.request.user)
         print(user.first_name)
@@ -56,6 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
   
 class CodGenerator(APIView):
+    """Функция добавления нового пользоватля в БД, формировния и отправки кода на email"""
     def post(self, request):
         confirmation_code = get_code()
         username = request.data.get('username')
@@ -88,30 +90,25 @@ class CodGenerator(APIView):
 
 
 class TokenGenerator(APIView):
+    """Функция генерациии токена по юзернейму и коду.
+    Она должна быть из 5 строк. Но для прохождения теста пришлось написать ещё 25.
+    """
     def post(self, request):
         if 'username' not in request.data or 'confirmation_code' not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         username=request.data['username']
         confirmation_code=request.data['confirmation_code']
-        
-        list_username = []
-        for x in User.objects.all().values('username'):
-            list_username.append(x['username'])
+        list_username = [x['username'] for x in  User.objects.all().values('username')]
         if username not in list_username:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
-        list_username = []
-        for x in User.objects.all().values('confirmation_code'):
-            list_username.append(x['confirmation_code'])
-        if confirmation_code not in list_username:
+        list_code = [x['confirmation_code'] for x in  User.objects.all().values('confirmation_code')]
+        if confirmation_code not in list_code:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        
         user = get_object_or_404(
             User,
             username=username,
             confirmation_code=confirmation_code
         )
-        
         refresh = RefreshToken.for_user(user)   
         return Response({
                 'token': str(refresh.access_token),

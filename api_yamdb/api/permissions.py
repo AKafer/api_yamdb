@@ -13,13 +13,21 @@ class IsAdmin(permissions.BasePermission):
         return False
 
 
-class IsUser(permissions.BasePermission):
+class IsModerator(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.user.is_authenticated:
-            return request.user.role in ['user', 'moderator', 'admin']
+            return request.user.role in ['moderator', 'admin']
         return False
 
     def has_object_permission(self, request, view, obj):
         if request.user.is_authenticated:
-            return request.user.role in ['user', 'moderator', 'admin']
+            return request.user.role in ['moderator', 'admin']
         return False
+
+
+class IsUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated
