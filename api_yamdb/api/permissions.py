@@ -34,7 +34,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.user.is_authenticated:
             return (
                 request.method in permissions.SAFE_METHODS
-                or request.user.role == 'admin' or request.user.is_superuser
+                or request.user.role == 'admin'
+                or request.user.is_superuser
             )
         return request.method in permissions.SAFE_METHODS
 
@@ -42,7 +43,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.user.is_authenticated:
             return (
                 request.method in permissions.SAFE_METHODS
-                or request.user.role == 'admin' or request.user.is_superuser
+                or request.user.role == 'admin'
+                or request.user.is_superuser
             )
         return request.method in permissions.SAFE_METHODS
 

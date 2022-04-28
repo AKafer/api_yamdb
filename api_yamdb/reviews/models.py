@@ -55,7 +55,7 @@ class Genre(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        return self.name
+        return self.slug
 
 
 class Title(models.Model):
@@ -69,11 +69,8 @@ class Title(models.Model):
         'Описание',
         blank=True,
     )
-    year = models.DateTimeField(
-        # как проверить год? (не может быть в будущем, не м.б. отриц)
-        'Год издания',
-        blank=True,
-        null=True
+    year = models.IntegerField(
+        default=0
     )
     genre = models.ManyToManyField(
         Genre,
@@ -87,13 +84,6 @@ class Title(models.Model):
         related_name='titles',
         blank=True,
         null=True
-    )
-    rating = models.IntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(10)
-        ]
     )
 
     def __str__(self):

@@ -1,12 +1,12 @@
 import random
 import string
-# from django.db.models import Avg
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework import viewsets, status, mixins
 from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly
+    IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny,
 )
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -22,7 +22,7 @@ from reviews.models import (
 from .serializers import (
     UserSerializer, UserForUserSerializer,
     CategorySerializer, GenreSerializer, TitleSerializer,
-    ReviewSerializer, CommentSerializer
+    ReviewSerializer, CommentSerializer, TitleListSerializer
 )
 from .permissions import (
     IsAdmin, IsAdminOrReadOnly, IsOwnerModerator
@@ -166,19 +166,24 @@ class GenreViewSet(mixins.CreateModelMixin,
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")
+    ).order_by("name")
     serializer_class = TitleSerializer
-    permission_classes = ([IsAdminOrReadOnly, ])
+    permission_classes = ([IsAdmin, ])
     filter_backends = (DjangoFilterBackend,)
     pagination_class = PageNumberPagination
-    filterset_fields = ('category', 'genre', 'name', 'year')
+    ordering_fields = '__all__'
 
-    """
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return (AllowAny(), )
+        return super().get_permissions()
+
     def get_serializer_class(self):
-        if self.action == 'retrieve' or  self.action == 'list':
-            return TitleListListSerializer
+        if self.action == 'list' or self.action == 'retrieve':
+            return TitleListSerializer
         return TitleSerializer
-    """
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -191,12 +196,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        # score_avg = round(title.reviews.all().aggregate(Avg('score')))
         serializer.save(
             title=title,
             author=self.request.user,
-            # score=score_avg
         )
+        score_avg = title.reviews.all().aggregate(Avg('score'))
+        score_avg = score_avg.get('score__avg')
+        title.rating = int(score_avg + 0.5)
+        title.save()
 
     def get_permissions(self):
         if self.action == 'partial_update' or self.action == 'destroy':
