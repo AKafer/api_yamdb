@@ -21,7 +21,7 @@ from reviews.models import (
 )
 from .serializers import (
     UserSerializer, UserForUserSerializer,
-    CategorySerializer, GenreSerializer, TitleSerializer,
+    CategorySerializer, GenreSerializer, TitleSerializer, TitleCreateSerializer,
     ReviewSerializer, CommentSerializer
 )
 from .permissions import (
@@ -169,16 +169,14 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     permission_classes = ([IsAdminOrReadOnly, ])
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     pagination_class = PageNumberPagination
-    filterset_fields = ('category', 'genre', 'name', 'year')
+    filterset_fields = ('category', 'genre__slug', 'year', 'name')
 
-    """
     def get_serializer_class(self):
-        if self.action == 'retrieve' or  self.action == 'list':
-            return TitleListListSerializer
+        if self.request.method in ('POST', 'PATCH',):
+            return TitleCreateSerializer
         return TitleSerializer
-    """
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

@@ -1,6 +1,8 @@
+from django_filters.rest_framework import filters
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -63,22 +65,22 @@ class Title(models.Model):
     name = models.CharField(
         'Название произведения',
         null=False,
-        max_length=200
+        max_length=255
     )
     description = models.TextField(
         'Описание',
+        null=True,
         blank=True,
     )
-    year = models.DateTimeField(
-        # как проверить год? (не может быть в будущем, не м.б. отриц)
-        'Год издания',
-        blank=True,
-        null=True
+    year = models.IntegerField(
+        validators=[MaxValueValidator(timezone.now().year)],
+        verbose_name='Год издания'
     )
     genre = models.ManyToManyField(
         Genre,
         verbose_name='Жанр(ы)',
-        # through='Genre' # как связать?
+        related_name='genre',
+        through='GenreAndTitleThrough',
     )
     category = models.ForeignKey(
         Category,
@@ -99,6 +101,13 @@ class Title(models.Model):
     def __str__(self):
         return f'{self.name}: общая информация'
 
+
+class GenreAndTitleThrough(models.Model):
+    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
+    title = models.ForeignKey('Title', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.title} {self.genre}'
 
 class Review(models.Model):
     """
