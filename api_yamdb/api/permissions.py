@@ -2,6 +2,7 @@ from rest_framework import permissions
 
 
 class IsAdmin(permissions.BasePermission):
+    """Класс разрешений для админа."""
     def has_permission(self, request, view):
         if request.user.is_authenticated:
             return (
@@ -15,6 +16,9 @@ class IsAdmin(permissions.BasePermission):
 
 
 class IsOwnerModerator(permissions.BasePermission):
+    """Класс разрешений для владельца контента
+    и юзеров с правами от модератора.
+    """
     def has_permission(self, request, view):
         return request.user.is_authenticated
 
@@ -29,6 +33,7 @@ class IsOwnerModerator(permissions.BasePermission):
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
+    """Класс разрешений для админа или для всех пользователей на чтение."""
 
     def has_permission(self, request, view):
         if request.user.is_authenticated:
@@ -50,6 +55,9 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
+    """Класс разрешений для владельца контента или
+    для всех пользователей на чтение.
+    """
 
     def has_permission(self, request, view):
         return (

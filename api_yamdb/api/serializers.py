@@ -7,6 +7,7 @@ from reviews.models import (
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Класс сериализатора пользователей для админа."""
     class Meta:
         model = User
         fields = (
@@ -23,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserForUserSerializer(serializers.ModelSerializer):
+    """Класс сериализатора пользователей для юзеров."""
     class Meta:
         model = User
         fields = (
@@ -44,6 +46,7 @@ class UserForUserSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Класс сериализатора категорий."""
     class Meta:
         exclude = ('id',)
         model = Category
@@ -51,6 +54,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    """Класс сериализатора жанров."""
     class Meta:
         exclude = ('id',)
         model = Genre
@@ -58,6 +62,7 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
+    """Класс сериализатора произведений на добавлени, изменение, удаление."""
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug'
@@ -72,8 +77,9 @@ class TitleSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Title
 
-  
+
 class TitleListSerializer(serializers.ModelSerializer):
+    """Класс сериализатора произведений на выдачу"""
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
     rating = serializers.IntegerField(
@@ -88,8 +94,9 @@ class TitleListSerializer(serializers.ModelSerializer):
         model = Title
         read_only_fields = ('id', 'rating')
 
-    
+
 class ReviewSerializer(serializers.ModelSerializer):
+    """Класс сериализатора ревью."""
     author = serializers.StringRelatedField(read_only=True)
 
     class Meta:
@@ -110,6 +117,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Класс сериализатора комментариев."""
     author = serializers.StringRelatedField(read_only=True)
 
     class Meta:

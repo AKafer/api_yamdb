@@ -39,7 +39,7 @@ def get_code():
 
 
 class CodGenerator(APIView):
-    """Функция добавления нового пользоватля в БД,
+    """Класс добавления нового пользоватля в БД,
     формировния и отправки кода на email.
     """
     def post(self, request):
@@ -74,8 +74,8 @@ class CodGenerator(APIView):
 
 
 class TokenGenerator(APIView):
-    """Функция генерациии токена по юзернейму и коду.
-    Она должна быть из 5 строк.
+    """Класс генерациии токена по юзернейму и коду.
+    Он должен быть из 5 строк.
     Но для прохождения теста пришлось написать ещё 25.
     """
     def post(self, request):
@@ -104,6 +104,7 @@ class TokenGenerator(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """Класс представления пользователей."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = ('username')
@@ -121,7 +122,6 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def user_rool_users_detail(self, request, username=None):
         user = get_object_or_404(User, username=self.request.user)
-        print(user.first_name)
         if request.method == 'PATCH':
             serializer = UserForUserSerializer(
                 user, data=request.data, partial=True)
@@ -137,6 +137,7 @@ class CategoryViewSet(mixins.CreateModelMixin,
                       mixins.ListModelMixin,
                       mixins.DestroyModelMixin,
                       viewsets.GenericViewSet):
+    """Класс представления категорий."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = ([IsAdminOrReadOnly, ])
@@ -153,12 +154,13 @@ class GenreViewSet(mixins.CreateModelMixin,
                    mixins.ListModelMixin,
                    mixins.DestroyModelMixin,
                    viewsets.GenericViewSet):
+    """Класс представления жанров"""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = ([IsAdminOrReadOnly, ])
-    filter_backends = (filters.SearchFilter,  DjangoFilterBackend)
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend)
     search_fields = ('name',)
-    filterset_fields = ('slug',) 
+    filterset_fields = ('slug',)
     lookup_field = ('slug')
     ordering = ('slug',)
 
@@ -168,33 +170,35 @@ class GenreViewSet(mixins.CreateModelMixin,
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    """Класс представления произведений"""
     serializer_class = TitleSerializer
     permission_classes = ([IsAdmin, ])
     pagination_class = PageNumberPagination
 
-    
     def get_queryset(self):
         queryset = Title.objects.all()
         name = self.request.query_params.get('name')
         if name is not None:
-            queryset = queryset.filter(name=name).annotate(Avg("reviews__score"))
+            queryset = queryset.filter(name__contains=name). \
+                annotate(Avg("reviews__score"))
             return queryset
         slug = self.request.query_params.get('genre')
         if slug is not None:
-            queryset = queryset.filter(genre__slug=slug).annotate(Avg("reviews__score")).order_by("name")
+            queryset = queryset.filter(genre__slug=slug). \
+                annotate(Avg("reviews__score")).order_by("name")
             return queryset
         slug = self.request.query_params.get('category')
         if slug is not None:
-            queryset = queryset.filter(category__slug=slug).annotate(Avg("reviews__score")).order_by("name")
+            queryset = queryset.filter(category__slug=slug). \
+                annotate(Avg("reviews__score")).order_by("name")
             return queryset
         year = self.request.query_params.get('year')
         if year is not None:
-            queryset = queryset.filter(year=year).annotate(Avg("reviews__score")).order_by("name")
+            queryset = queryset.filter(year=year). \
+                annotate(Avg("reviews__score")).order_by("name")
             return queryset
-        queryset = queryset.annotate(Avg("reviews__score")).order_by("name") 
+        queryset = queryset.annotate(Avg("reviews__score")).order_by("name")
         return queryset
-  
-    # '?genre=(?P<slug>.*)$'
 
     def get_permissions(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -208,6 +212,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """Класс представления ревью."""
     serializer_class = ReviewSerializer
     permission_classes = ([IsAuthenticatedOrReadOnly, ])
 
@@ -233,6 +238,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Класс представления комментариев."""
     serializer_class = CommentSerializer
     permission_classes = ([IsAuthenticatedOrReadOnly, ])
 
