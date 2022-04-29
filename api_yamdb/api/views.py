@@ -156,9 +156,11 @@ class GenreViewSet(mixins.CreateModelMixin,
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = ([IsAdminOrReadOnly, ])
-    filter_backends = (filters.SearchFilter, )
+    filter_backends = (filters.SearchFilter,  DjangoFilterBackend)
     search_fields = ('name',)
+    filterset_fields = ('slug',) 
     lookup_field = ('slug')
+    ordering = ('slug',)
 
     def get_object(self):
         return get_object_or_404(
@@ -166,14 +168,33 @@ class GenreViewSet(mixins.CreateModelMixin,
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(
-        Avg("reviews__score")
-    ).order_by("name")
     serializer_class = TitleSerializer
     permission_classes = ([IsAdmin, ])
-    filter_backends = (DjangoFilterBackend,)
     pagination_class = PageNumberPagination
-    ordering_fields = '__all__'
+
+    
+    def get_queryset(self):
+        queryset = Title.objects.all()
+        name = self.request.query_params.get('name')
+        if name is not None:
+            queryset = queryset.filter(name=name).annotate(Avg("reviews__score"))
+            return queryset
+        slug = self.request.query_params.get('genre')
+        if slug is not None:
+            queryset = queryset.filter(genre__slug=slug).annotate(Avg("reviews__score")).order_by("name")
+            return queryset
+        slug = self.request.query_params.get('category')
+        if slug is not None:
+            queryset = queryset.filter(category__slug=slug).annotate(Avg("reviews__score")).order_by("name")
+            return queryset
+        year = self.request.query_params.get('year')
+        if year is not None:
+            queryset = queryset.filter(year=year).annotate(Avg("reviews__score")).order_by("name")
+            return queryset
+        queryset = queryset.annotate(Avg("reviews__score")).order_by("name") 
+        return queryset
+  
+    # '?genre=(?P<slug>.*)$'
 
     def get_permissions(self):
         if self.action == 'list' or self.action == 'retrieve':
