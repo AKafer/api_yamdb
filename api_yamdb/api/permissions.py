@@ -15,23 +15,6 @@ class IsAdmin(permissions.BasePermission):
         return False
 
 
-class IsOwnerModerator(permissions.BasePermission):
-    """Класс разрешений для владельца контента
-    и юзеров с правами от модератора.
-    """
-    def has_permission(self, request, view):
-        return request.user.is_authenticated
-
-    def has_object_permission(self, request, view, obj):
-        if request.user.is_authenticated:
-            print(obj.author)
-            return (
-                request.user.role in ['moderator', 'admin']
-                or obj.author == request.user
-            )
-        return False
-
-
 class IsAdminOrReadOnly(permissions.BasePermission):
     """Класс разрешений для админа или для всех пользователей на чтение."""
 
@@ -55,10 +38,9 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
-    """Класс разрешений для владельца контента или
+    """Класс разрешений для владельца контента, модератора, админа или
     для всех пользователей на чтение.
     """
-
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
@@ -66,7 +48,10 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         )
 
     def has_object_permission(self, request, view, obj):
-        return (
-            request.method in permissions.SAFE_METHODS
-            or obj.author == request.user
-        )
+        if request.user.is_authenticated:
+            return (
+                request.user.role in ['moderator', 'admin']
+                or request.method in permissions.SAFE_METHODS
+                or obj.author == request.user
+            )
+        return request.method in permissions.SAFE_METHODS

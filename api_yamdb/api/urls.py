@@ -3,11 +3,11 @@ from django.urls import path, include
 
 from .views import (
     UserViewSet, CategoryViewSet, TitleViewSet,
-    GenreViewSet, ReviewViewSet, CommentViewSet,
-    CodGenerator, TokenGenerator
+    GenreViewSet, ReviewViewSet, CommentViewSet, CodeTokenClass
 )
 
 router = DefaultRouter()
+router.register(r'auth', CodeTokenClass, basename='auth_users')
 router.register(r'users', UserViewSet, basename='user_for_admin')
 router.register(r'categories', CategoryViewSet, basename='categories')
 router.register(r'titles', TitleViewSet, basename='titles')
@@ -23,6 +23,4 @@ router.register(
 
 urlpatterns = [
     path('v1/', include(router.urls)),
-    path('v1/auth/signup/', CodGenerator.as_view()),
-    path('v1/auth/token/', TokenGenerator.as_view()),
 ]

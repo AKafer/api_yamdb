@@ -1,22 +1,19 @@
-import random
-import string
+import uuid
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
-from rest_framework.views import APIView
 from rest_framework import viewsets, status, mixins
-from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny,
-)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from django_filters import rest_framework as dfilters
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import (
-    User, Category, Genre,
+    User, Code, Category, Genre,
     Title, Review
 )
 from .serializers import (
@@ -25,78 +22,69 @@ from .serializers import (
     ReviewSerializer, CommentSerializer, TitleListSerializer
 )
 from .permissions import (
-    IsAdmin, IsAdminOrReadOnly, IsOwnerModerator
+    IsAdmin, IsAdminOrReadOnly, IsOwnerOrReadOnly
 )
+from api_yamdb.settings import DOMAIN_NAME
 
 TEMA = 'Подтверждающий код для API YAMDB'
-N_code_len = 20
+EMAIL_FROM = f'from@{DOMAIN_NAME}'
 
 
-def get_code():
-    """Функция генерации кода"""
-    allowedChars = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(random.choice(allowedChars) for _ in range(N_code_len))
+class CodeTokenClass(viewsets.ModelViewSet):
+    """Класс авторизации пользователей"""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-
-class CodGenerator(APIView):
-    """Класс добавления нового пользоватля в БД,
-    формировния и отправки кода на email.
-    """
-    def post(self, request):
-        confirmation_code = get_code()
+    @action(detail=False, methods=['post', ], url_path='signup')
+    def CodGenerator(self, request):
+        """Функция генерациии кода по юзернейму и email."""
+        confirmation_code = str(uuid.uuid4())
         username = request.data.get('username')
         email = request.data.get('email')
+        serializer = self.get_serializer(data=request.data)
+        if not User.objects.filter(username=username, email=email).exists():
+            if serializer.is_valid(raise_exception=True):
+                user = User.objects.create(username=username, email=email)
+                Code.objects.create(
+                    user=user,
+                    confirmation_code=confirmation_code
+                )
+                send_mail(
+                    TEMA,
+                    confirmation_code,
+                    EMAIL_FROM,
+                    [email],
+                    fail_silently=False,
+                )
+                return Response(request.data, status=status.HTTP_200_OK)
+        user = get_object_or_404(User, username=username, email=email)
+        Code .objects.update(
+            user=user,
+            confirmation_code=confirmation_code
+        )
         send_mail(
             TEMA,
             confirmation_code,
-            'from@example.com',
+            EMAIL_FROM,
             [email],
             fail_silently=False,
         )
-        if User.objects.filter(username=username, email=email).exists():
-            user = get_object_or_404(User, username=username, email=email)
-            user.confirmation_code = confirmation_code
-            user.save()
-            return Response(request.data, status=status.HTTP_200_OK)
-        else:
-            serializer = UserSerializer(data=request.data)
-            if serializer.is_valid():
-                User.objects.create(
-                    username=username,
-                    email=email,
-                    confirmation_code=confirmation_code
-                )
-                return Response(request.data, status=status.HTTP_200_OK)
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(request.data, status=status.HTTP_200_OK)
 
-
-class TokenGenerator(APIView):
-    """Класс генерациии токена по юзернейму и коду.
-    Он должен быть из 5 строк.
-    Но для прохождения теста пришлось написать ещё 25.
-    """
-    def post(self, request):
+    @action(detail=False, methods=['post', ], url_path='token')
+    def TokenGenerator(self, request):
+        """Функция генерациии токена по юзернейму и коду."""
         if 'username' not in request.data \
                 or 'confirmation_code' not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         username = request.data['username']
         confirmation_code = request.data['confirmation_code']
-        db_usernames = User.objects.all().values('username')
-        list_username = [x['username'] for x in db_usernames]
-        if username not in list_username:
+        if not User.objects.filter(username=username).exists():
             return Response(status=status.HTTP_404_NOT_FOUND)
-        db_codes = User.objects.all().values('confirmation_code')
-        list_code = [x['confirmation_code'] for x in db_codes]
-        if confirmation_code not in list_code:
+        if not Code.objects.filter(
+                confirmation_code=confirmation_code).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        user = get_object_or_404(
-            User,
-            username=username,
-            confirmation_code=confirmation_code
-        )
+        user = get_object_or_404(User, username=username)
         refresh = RefreshToken.for_user(user)
         return Response({
             'token': str(refresh.access_token),
@@ -118,7 +106,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False, methods=['get', 'patch'],
-        url_path='me', permission_classes=([IsAuthenticated, ])
+        url_path='me', permission_classes=(IsAuthenticated, )
     )
     def user_rool_users_detail(self, request, username=None):
         user = get_object_or_404(User, username=self.request.user)
@@ -133,14 +121,19 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(mixins.CreateModelMixin,
-                      mixins.ListModelMixin,
-                      mixins.DestroyModelMixin,
-                      viewsets.GenericViewSet):
+class MyCreateListDestroyClass(mixins.CreateModelMixin,
+                               mixins.ListModelMixin,
+                               mixins.DestroyModelMixin,
+                               viewsets.GenericViewSet):
+    "Кастомный миксин класс"
+    pass
+
+
+class CategoryViewSet(MyCreateListDestroyClass):
     """Класс представления категорий."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = ([IsAdminOrReadOnly, ])
+    permission_classes = (IsAdminOrReadOnly, )
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
     lookup_field = ('slug')
@@ -150,14 +143,11 @@ class CategoryViewSet(mixins.CreateModelMixin,
             self.queryset, slug=self.kwargs["slug"])
 
 
-class GenreViewSet(mixins.CreateModelMixin,
-                   mixins.ListModelMixin,
-                   mixins.DestroyModelMixin,
-                   viewsets.GenericViewSet):
+class GenreViewSet(MyCreateListDestroyClass):
     """Класс представления жанров"""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = ([IsAdminOrReadOnly, ])
+    permission_classes = (IsAdminOrReadOnly, )
     filter_backends = (filters.SearchFilter, DjangoFilterBackend)
     search_fields = ('name',)
     filterset_fields = ('slug',)
@@ -169,41 +159,33 @@ class GenreViewSet(mixins.CreateModelMixin,
             self.queryset, slug=self.kwargs["slug"])
 
 
-class TitleViewSet(viewsets.ModelViewSet):
-    """Класс представления произведений"""
-    serializer_class = TitleSerializer
-    permission_classes = ([IsAdmin, ])
-    pagination_class = PageNumberPagination
+class MyFilter(dfilters.FilterSet):
+    name = dfilters.CharFilter(lookup_expr='icontains')
+    genre = dfilters.CharFilter(method='get_genre_slug')
+    category = dfilters.CharFilter(method='get_category_slug')
 
-    def get_queryset(self):
-        queryset = Title.objects.all()
-        name = self.request.query_params.get('name')
-        if name is not None:
-            queryset = queryset.filter(name__contains=name). \
-                annotate(Avg("reviews__score"))
-            return queryset
-        slug = self.request.query_params.get('genre')
-        if slug is not None:
-            queryset = queryset.filter(genre__slug=slug). \
-                annotate(Avg("reviews__score")).order_by("name")
-            return queryset
-        slug = self.request.query_params.get('category')
-        if slug is not None:
-            queryset = queryset.filter(category__slug=slug). \
-                annotate(Avg("reviews__score")).order_by("name")
-            return queryset
-        year = self.request.query_params.get('year')
-        if year is not None:
-            queryset = queryset.filter(year=year). \
-                annotate(Avg("reviews__score")).order_by("name")
-            return queryset
-        queryset = queryset.annotate(Avg("reviews__score")).order_by("name")
+    def get_genre_slug(self, queryset, name, value):
+        queryset = queryset.filter(genre__slug=value)
         return queryset
 
-    def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return (AllowAny(), )
-        return super().get_permissions()
+    def get_category_slug(self, queryset, name, value):
+        queryset = queryset.filter(category__slug=value)
+        return queryset
+
+    class Meta:
+        model = Title
+        fields = ('name', 'year', 'genre', 'category')
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Класс представления произведений"""
+    queryset = Title.objects.all().annotate(
+        Avg("reviews__score")).order_by("name")
+    serializer_class = TitleSerializer
+    permission_classes = (IsAdminOrReadOnly, )
+    pagination_class = PageNumberPagination
+    filter_backends = (dfilters.DjangoFilterBackend,)
+    filterset_class = MyFilter
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
@@ -214,7 +196,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     """Класс представления ревью."""
     serializer_class = ReviewSerializer
-    permission_classes = ([IsAuthenticatedOrReadOnly, ])
+    permission_classes = (IsOwnerOrReadOnly, )
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -226,21 +208,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
             title=title,
             author=self.request.user,
         )
-        score_avg = title.reviews.all().aggregate(Avg('score'))
-        score_avg = score_avg.get('score__avg')
-        title.rating = int(score_avg + 0.5)
-        title.save()
-
-    def get_permissions(self):
-        if self.action == 'partial_update' or self.action == 'destroy':
-            return (IsOwnerModerator(), )
-        return super().get_permissions()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Класс представления комментариев."""
     serializer_class = CommentSerializer
-    permission_classes = ([IsAuthenticatedOrReadOnly, ])
+    permission_classes = (IsOwnerOrReadOnly, )
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
@@ -252,8 +225,3 @@ class CommentViewSet(viewsets.ModelViewSet):
             review=review,
             author=self.request.user,
         )
-
-    def get_permissions(self):
-        if self.action == 'partial_update' or self.action == 'destroy':
-            return (IsOwnerModerator(), )
-        return super().get_permissions()

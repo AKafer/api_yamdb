@@ -1,5 +1,6 @@
+
+import datetime as dt
 from rest_framework import serializers
-# from rest_framework.validators import UniqueTogetherValidator
 from reviews.models import (
     User, Category, Genre,
     Title, Review, Comment,
@@ -18,8 +19,10 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('password',)
 
     def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError('username не может быть me')
+        if value.lower() == 'me':
+            raise serializers.ValidationError(
+                'username не может быть me, Me, ME, mE'
+            )
         return value
 
 
@@ -31,18 +34,7 @@ class UserForUserSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role'
         )
-        read_only_fields = ('password',)
-
-    def update(self, instance, validated_data):
-        instance.username = validated_data.get('username', instance.username)
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get(
-            'first_name', instance.first_name)
-        instance.last_name = validated_data.get(
-            'last_name', instance.last_name)
-        instance.bio = validated_data.get('bio', instance.bio)
-        instance.role = instance.role
-        return instance
+        read_only_fields = ('password', 'role')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -76,6 +68,14 @@ class TitleSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Title
+
+    def validate_year(self, value):
+        year = dt.date.today().year
+        if value > year:
+            raise serializers.ValidationError(
+                'Проснись! Год не может быть больше текущего!'
+            )
+        return value
 
 
 class TitleListSerializer(serializers.ModelSerializer):
@@ -114,6 +114,13 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Вы уже писал отзыв на это. Угомонитесь!')
         return data
+
+    def validate_score(self, value):
+        if value not in range(1, 11, 1):
+            raise serializers.ValidationError(
+                'Проснись! Оценка должна быть от 1 до 10'
+            )
+        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):

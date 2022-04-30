@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class User(AbstractUser):
@@ -14,11 +13,15 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=150, null=True, blank=True)
     last_name = models.CharField(max_length=150, null=True, blank=True)
     role = models.CharField(max_length=150, choices=CHOICES, default='user')
-    confirmation_code = models.CharField(max_length=20, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.username
+
+
+class Code(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    confirmation_code = models.CharField(max_length=150, null=True, blank=True)
 
 
 class Category(models.Model):
@@ -104,13 +107,7 @@ class Review(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
-    score = models.IntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(10)
-        ]
-    )
+    score = models.IntegerField(default=1)
 
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
 
