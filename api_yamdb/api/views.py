@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 from rest_framework import viewsets, status, mixins
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+# from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from django_filters import rest_framework as dfilters
@@ -84,11 +84,11 @@ class CodeTokenClass(viewsets.ModelViewSet):
         if not Code.objects.filter(
                 confirmation_code=confirmation_code).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        user = get_object_or_404(User, username=username)
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'token': str(refresh.access_token),
-        })
+        # user = get_object_or_404(User, username=username)
+        # refresh = RefreshToken.for_user(user)
+        # return Response({
+        #    'token': str(refresh.access_token),
+        # })
 
 
 class UserViewSet(viewsets.ModelViewSet):
