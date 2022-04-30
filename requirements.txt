@@ -7,10 +7,12 @@ colorama==0.4.4
 cssselect==1.1.0
 cssutils==2.4.0
 Django==2.2.16
+django-filter==21.1
 djangorestframework==3.12.4
 djangorestframework-simplejwt==5.1.0
 flake8==4.0.1
 idna==3.3
+importlib-metadata==4.11.3
 iniconfig==1.1.1
 lxml==4.8.0
 mccabe==0.6.1
@@ -30,5 +32,7 @@ pytz==2022.1
 requests==2.26.0
 sqlparse==0.4.2
 toml==0.10.2
+typing-extensions==4.2.0
 urllib3==1.26.9
 yagmail==0.15.277
+zipp==3.8.0
