@@ -38,7 +38,7 @@ class CodeTokenClass(viewsets.ModelViewSet):
     @action(detail=False, methods=['post', ], url_path='signup')
     def CodGenerator(self, request):
         """Функция генерациии кода по юзернейму и email."""
-        confirmation_code = str(uuid.uuid4())
+        confirmation_code = str(uuid.uuid4())  # новый кодер
         username = request.data.get('username')
         email = request.data.get('email')
         serializer = self.get_serializer(data=request.data)
