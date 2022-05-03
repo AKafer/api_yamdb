@@ -1,9 +1,8 @@
-
 import datetime as dt
 from rest_framework import serializers
 from reviews.models import (
     User, Category, Genre,
-    Title, Review, Comment,
+    Title, Review, Comment
 )
 
 
@@ -116,7 +115,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         return data
 
     def validate_score(self, value):
-        if value not in range(1, 11, 1):
+        if value > 10:
             raise serializers.ValidationError(
                 'Проснись! Оценка должна быть от 1 до 10'
             )

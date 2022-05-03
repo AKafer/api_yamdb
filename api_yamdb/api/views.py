@@ -2,7 +2,7 @@ import uuid
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,6 +24,8 @@ from .serializers import (
 from .permissions import (
     IsAdmin, IsAdminOrReadOnly, IsOwnerOrReadOnly
 )
+from .mixin import MyCreateListDestroyClass
+from .filters import MyFilter
 from api_yamdb.settings import DOMAIN_NAME
 
 TEMA = 'Подтверждающий код для API YAMDB'
@@ -35,7 +37,7 @@ class CodeTokenClass(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=False, methods=['post', ], url_path='signup')
+    @action(detail=False, methods=['post'], url_path='signup')
     def CodGenerator(self, request):
         """Функция генерациии кода по юзернейму и email."""
         confirmation_code = str(uuid.uuid4())  # новый кодер
@@ -58,7 +60,7 @@ class CodeTokenClass(viewsets.ModelViewSet):
                 )
                 return Response(request.data, status=status.HTTP_200_OK)
         user = get_object_or_404(User, username=username, email=email)
-        Code .objects.update(
+        Code.objects.update(
             user=user,
             confirmation_code=confirmation_code
         )
@@ -71,11 +73,10 @@ class CodeTokenClass(viewsets.ModelViewSet):
         )
         return Response(request.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post', ], url_path='token')
+    @action(detail=False, methods=['post'], url_path='token')
     def TokenGenerator(self, request):
         """Функция генерациии токена по юзернейму и коду."""
-        if 'username' not in request.data \
-                or 'confirmation_code' not in request.data:
+        if ('username' or 'confirmation_code') not in request.data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         username = request.data['username']
         confirmation_code = request.data['confirmation_code']
@@ -84,7 +85,10 @@ class CodeTokenClass(viewsets.ModelViewSet):
         if not Code.objects.filter(
                 confirmation_code=confirmation_code).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        user = get_object_or_404(User, username=username)
+        user = get_object_or_404(
+            Code,
+            username=username,
+            confirmation_code=confirmation_code)
         refresh = RefreshToken.for_user(user)
         return Response({
             'token': str(refresh.access_token),
@@ -96,7 +100,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = ('username')
-    permission_classes = ([IsAdmin, ])
+    permission_classes = [IsAdmin, ]
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 
@@ -119,14 +123,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = UserForUserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class MyCreateListDestroyClass(mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin,
-                               viewsets.GenericViewSet):
-    "Кастомный миксин класс"
-    pass
 
 
 class CategoryViewSet(MyCreateListDestroyClass):
@@ -159,29 +155,10 @@ class GenreViewSet(MyCreateListDestroyClass):
             self.queryset, slug=self.kwargs["slug"])
 
 
-class MyFilter(dfilters.FilterSet):
-    name = dfilters.CharFilter(lookup_expr='icontains')
-    genre = dfilters.CharFilter(method='get_genre_slug')
-    category = dfilters.CharFilter(method='get_category_slug')
-
-    def get_genre_slug(self, queryset, name, value):
-        queryset = queryset.filter(genre__slug=value)
-        return queryset
-
-    def get_category_slug(self, queryset, name, value):
-        queryset = queryset.filter(category__slug=value)
-        return queryset
-
-    class Meta:
-        model = Title
-        fields = ('name', 'year', 'genre', 'category')
-
-
 class TitleViewSet(viewsets.ModelViewSet):
     """Класс представления произведений"""
     queryset = Title.objects.all().annotate(
         Avg("reviews__score")).order_by("name")
-    serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly, )
     pagination_class = PageNumberPagination
     filter_backends = (dfilters.DjangoFilterBackend,)
