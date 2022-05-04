@@ -3,7 +3,7 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
@@ -22,7 +22,8 @@ from .serializers import (
     ReviewSerializer, CommentSerializer, TitleListSerializer
 )
 from .permissions import (
-    IsAdmin, IsAdminOrReadOnly, IsOwnerOrReadOnly
+    IsAdmin, IsAdminOrReadOnly,
+    IsOwnerOrReadOnly, NobodyAllow
 )
 from .mixin import MyCreateListDestroyClass
 from .filters import MyFilter
@@ -36,11 +37,15 @@ class CodeTokenClass(viewsets.ModelViewSet):
     """Класс авторизации пользователей"""
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [NobodyAllow, ]
 
-    @action(detail=False, methods=['post'], url_path='signup')
+    @action(
+        detail=False, methods=['post'],
+        url_path='signup', permission_classes=(AllowAny, )
+    )
     def CodGenerator(self, request):
         """Функция генерациии кода по юзернейму и email."""
-        confirmation_code = str(uuid.uuid4())  # новый кодер
+        confirmation_code = str(uuid.uuid4())
         username = request.data.get('username')
         email = request.data.get('email')
         serializer = self.get_serializer(data=request.data)
@@ -73,7 +78,10 @@ class CodeTokenClass(viewsets.ModelViewSet):
         )
         return Response(request.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], url_path='token')
+    @action(
+        detail=False, methods=['post'],
+        url_path='token', permission_classes=(AllowAny, )
+    )
     def TokenGenerator(self, request):
         """Функция генерациии токена по юзернейму и коду."""
         if ('username' or 'confirmation_code') not in request.data:
@@ -87,7 +95,7 @@ class CodeTokenClass(viewsets.ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user = get_object_or_404(
             Code,
-            username=username,
+            user=username,
             confirmation_code=confirmation_code)
         refresh = RefreshToken.for_user(user)
         return Response({

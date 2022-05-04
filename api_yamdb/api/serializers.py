@@ -1,8 +1,9 @@
 import datetime as dt
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from reviews.models import (
     User, Category, Genre,
-    Title, Review, Comment
+    Title, Review, Comment, Code
 )
 
 
@@ -23,6 +24,21 @@ class UserSerializer(serializers.ModelSerializer):
                 'username не может быть me, Me, ME, mE'
             )
         return value
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    username = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='username')
+
+    class Meta:
+        model = Code
+        fields = '__all__'
+
+    def validate(self, data):
+        user = get_object_or_404(User, username=data['username'])
+        print(user)
+        return data
 
 
 class UserForUserSerializer(serializers.ModelSerializer):
@@ -115,11 +131,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         return data
 
     def validate_score(self, value):
-        if value > 10:
-            raise serializers.ValidationError(
-                'Проснись! Оценка должна быть от 1 до 10'
-            )
-        return value
+        if 0 < value < 11:
+            return value
+        raise serializers.ValidationError(
+            'Проснись! Оценка должна быть от 1 до 10'
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):

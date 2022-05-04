@@ -1,6 +1,14 @@
 from rest_framework import permissions
 
 
+class NobodyAllow(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        return False
+
+
 class IsAdmin(permissions.BasePermission):
     """Класс разрешений для админа."""
     def has_permission(self, request, view):
