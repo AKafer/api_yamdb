@@ -1,4 +1,5 @@
 import datetime as dt
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from reviews.models import (
     User, Category, Genre,
@@ -39,7 +40,7 @@ class TokenGeneratorSerialiser(serializers.ModelSerializer):
         try:
             data.get('username')
             data.get('confirmation_code')
-        except Exception:
+        except ValidationError:
             raise serializers.ValidationError(
                 'username или confirmation_code не указаны'
             )

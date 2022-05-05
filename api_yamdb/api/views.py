@@ -89,12 +89,16 @@ class CodeTokenClass(viewsets.ModelViewSet):
         username = request.data['username']
         confirmation_code = request.data['confirmation_code']
         user_valid = get_object_or_404(User, username=username)
-        if not Code.objects.filter(
-                confirmation_code=confirmation_code).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        user = get_object_or_404(
-            Code, user=user_valid,
-            confirmation_code=confirmation_code)
+        try:
+            user = Code.objects.get(
+                user=user_valid,
+                confirmation_code=confirmation_code
+            )
+        except Code.DoesNotExist:
+            return Response(
+                {'message': 'Проверь confirmation_code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         refresh = RefreshToken.for_user(user)
         return Response({
             'token': str(refresh.access_token),
