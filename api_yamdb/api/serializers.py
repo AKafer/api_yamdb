@@ -1,5 +1,4 @@
 import datetime as dt
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from reviews.models import (
     User, Category, Genre,
@@ -26,18 +25,24 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
 
-class TokenSerializer(serializers.ModelSerializer):
-    username = serializers.SlugRelatedField(
-        queryset=User.objects.all(),
-        slug_field='username')
+class TokenGeneratorSerialiser(serializers.ModelSerializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
 
     class Meta:
         model = Code
-        fields = '__all__'
+        fields = (
+            'username', 'confirmation_code'
+        )
 
     def validate(self, data):
-        user = get_object_or_404(User, username=data['username'])
-        print(user)
+        try:
+            data.get('username')
+            data.get('confirmation_code')
+        except Exception:
+            raise serializers.ValidationError(
+                'username или confirmation_code не указаны'
+            )
         return data
 
 

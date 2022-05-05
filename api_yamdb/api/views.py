@@ -17,7 +17,7 @@ from reviews.models import (
     Title, Review
 )
 from .serializers import (
-    UserSerializer, UserForUserSerializer,
+    UserSerializer, UserForUserSerializer, TokenGeneratorSerialiser,
     CategorySerializer, GenreSerializer, TitleSerializer,
     ReviewSerializer, CommentSerializer, TitleListSerializer
 )
@@ -37,7 +37,7 @@ class CodeTokenClass(viewsets.ModelViewSet):
     """Класс авторизации пользователей"""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [NobodyAllow, ]
+    permission_classes = (NobodyAllow, )
 
     @action(
         detail=False, methods=['post'],
@@ -84,18 +84,16 @@ class CodeTokenClass(viewsets.ModelViewSet):
     )
     def TokenGenerator(self, request):
         """Функция генерациии токена по юзернейму и коду."""
-        if ('username' or 'confirmation_code') not in request.data:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = TokenGeneratorSerialiser(data=request.data)
+        serializer.is_valid(raise_exception=True)
         username = request.data['username']
         confirmation_code = request.data['confirmation_code']
-        if not User.objects.filter(username=username).exists():
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        user_valid = get_object_or_404(User, username=username)
         if not Code.objects.filter(
                 confirmation_code=confirmation_code).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
         user = get_object_or_404(
-            Code,
-            user=username,
+            Code, user=user_valid,
             confirmation_code=confirmation_code)
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -108,7 +106,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = ('username')
-    permission_classes = [IsAdmin, ]
+    permission_classes = (IsAdmin,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 
