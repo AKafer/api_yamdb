@@ -21,3 +21,4 @@ class Command(BaseCommand):
             for i, row in tmp_data.iterrows()
         ]
         User.objects.bulk_create(users)
+        print('Данные записаны в БД')
